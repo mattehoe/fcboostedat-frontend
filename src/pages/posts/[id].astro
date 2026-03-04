@@ -1,0 +1,61 @@
+---
+export const prerender = false
+import Layout from '../../layouts/Layout.astro'
+import { fetchCollection, getImageUrl } from '../../directus.js'
+
+const { id } = Astro.params
+
+const post = await fetchCollection('posts',
+  `/${id}?fields=*,mentioned_people.people_id.*,match.id,match.home_score,match.away_score,match.home_team.name,match.away_team.name,tournament_edition.id,tournament_edition.edition,tournament_edition.event.id,tournament_edition.event.name`)
+  console.log(JSON.stringify(post, null, 2))
+const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-GB', {
+  day: 'numeric', month: 'long', year: 'numeric'
+})
+---
+
+<Layout title={post.title}>
+
+  <div class="max-w-3xl mx-auto">
+
+    <a href="/posts" class="btn btn-ghost btn-sm mb-6">← Back to posts</a>
+
+    {post.cover_image && (
+      <img src={getImageUrl(post.cover_image)} alt={post.title} class="w-full h-64 object-cover rounded-2xl mb-8" />
+    )}
+
+    <h1 class="text-4xl font-bold mb-2">{post.title}</h1>
+    <p class="text-base-content/50 mb-6">{formatDate(post.published_date)}</p>
+
+    {post.match && (
+      <a href={`/matches/${post.match.id}`} class="alert bg-base-200 mb-6 hover:bg-base-300 transition-colors cursor-pointer">
+        <span>⚽ Match —</span>
+        <span class="font-bold">{post.match.home_team.name} {post.match.home_score} — {post.match.away_score} {post.match.away_team.name}</span>
+      </a>
+    )}
+
+    {post.tournament_edition && (
+      <a href={`/tournaments/${post.tournament_edition.event.id}/editions/${post.tournament_edition.id}`} class="alert bg-base-200 mb-6 hover:bg-base-300 transition-colors cursor-pointer">
+        <span>🏆 Tournament —</span>
+        <span class="font-bold">{post.tournament_edition.event.name} {post.tournament_edition.edition}</span>
+      </a>
+    )}
+
+    <div class="prose prose-invert max-w-none mb-10" set:html={post.text} />
+
+    {post.mentioned_people?.length > 0 && (
+      <div class="divider"></div>
+      <div>
+        <h3 class="text-lg font-bold mb-4">Players in this article</h3>
+        <div class="flex flex-wrap gap-3">
+          {post.mentioned_people.map(({ people_id: player }) => (
+            <a href={`/people/${player.id}`} class="badge badge-lg badge-outline hover:badge-primary transition-colors p-4">
+              {player.full_name}
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+
+  </div>
+
+</Layout>

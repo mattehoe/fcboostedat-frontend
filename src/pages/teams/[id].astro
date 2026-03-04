@@ -1,0 +1,184 @@
+---
+export const prerender = false
+import Layout from '../../layouts/Layout.astro'
+import { fetchCollection, getImageUrl } from '../../directus.js'
+
+const { id } = Astro.params
+
+const team = await fetchCollection('teams', `/${id}?fields=*`)
+
+const allMatches = await fetchCollection('matches',
+  `?fields=*,home_team.*,away_team.*,tournament.id,tournament.edition,tournament.event.name&filter[_or][0][home_team][_eq]=${id}&filter[_or][1][away_team][_eq]=${id}&sort=-date`)
+
+const recentMatches = allMatches.slice(0, 5)
+
+const players = await fetchCollection('people',
+  `?fields=*,player_profile.*&filter[current_team][_eq]=${id}&sort=full_name`)
+
+const tournaments = await fetchCollection('tournaments',
+  `?fields=*,event.*,teams.teams_id,teams.placement&filter[teams][teams_id][_eq]=${id}&sort=-date`)
+
+const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-GB', {
+  day: 'numeric', month: 'long', year: 'numeric'
+})
+
+const teamId = parseInt(id)
+
+const getResult = (match) => {
+  const weAreHome = match.home_team.id === teamId
+  const ourScore = weAreHome ? match.home_score : match.away_score
+  const theirScore = weAreHome ? match.away_score : match.home_score
+  return ourScore > theirScore ? 'W' : ourScore < theirScore ? 'L' : 'D'
+}
+
+const wins = allMatches.filter(m => getResult(m) === 'W').length
+const draws = allMatches.filter(m => getResult(m) === 'D').length
+const losses = allMatches.filter(m => getResult(m) === 'L').length
+
+const resultColor = (match) => {
+  const r = getResult(match)
+  return r === 'W' ? 'badge-success' : r === 'L' ? 'badge-error' : 'badge-warning'
+}
+---
+
+<Layout title={`${team.name} — FC Boosted`}>
+
+  <a href="/teams" class="btn btn-ghost btn-sm mb-6">← Back to teams</a>
+
+  <!-- Header -->
+  <div class="flex items-center gap-6 mb-8">
+    {team.logo ? (
+      <img src={getImageUrl(team.logo)} alt={team.name} class="w-24 h-24 object-contain" />
+    ) : (
+      <div class="w-24 h-24 rounded-full bg-base-200 flex items-center justify-center text-4xl">⚽</div>
+    )}
+    <div>
+      <h1 class="text-4xl font-bold">{team.name}</h1>
+      {team.city && <p class="text-base-content/50 mt-1">{team.city}</p>}
+      {team.notes && <p class="text-base-content/60 mt-2">{team.notes}</p>}
+    </div>
+  </div>
+
+  <!-- Record stats -->
+  {allMatches.length > 0 && (
+    <div class="stats shadow bg-base-200 w-full mb-8">
+      <div class="stat">
+        <div class="stat-title">Played</div>
+        <div class="stat-value">{allMatches.length}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Wins</div>
+        <div class="stat-value text-success">{wins}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Draws</div>
+        <div class="stat-value text-warning">{draws}</div>
+      </div>
+      <div class="stat">
+        <div class="stat-title">Losses</div>
+        <div class="stat-value text-error">{losses}</div>
+      </div>
+    </div>
+  )}
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+    <!-- Left: Tournaments + Players -->
+    <div class="md:col-span-2 flex flex-col gap-8">
+
+      <!-- Tournaments -->
+      <div class="flex flex-col gap-3">
+  {tournaments.map(t => {
+    const entry = t.teams?.find(e => e.teams_id === parseInt(id))
+    const placement = entry?.placement
+    return (
+      <a href={`/tournaments/${t.event.id}/editions/${t.id}`} class="card bg-base-200 hover:bg-base-300 transition-colors">
+        <div class="card-body py-4 flex-row items-center justify-between">
+          <div>
+            <p class="font-bold">{t.event.name}</p>
+            <p class="text-sm text-base-content/50">{t.edition}</p>
+          </div>
+          <div class="flex items-center gap-3">
+            {placement && (
+              <span class={`font-bold text-lg ${
+                placement === 1 ? 'text-yellow-400' :
+                placement === 2 ? 'text-gray-400' :
+                placement === 3 ? 'text-amber-600' :
+                'text-base-content/50'
+              }`}>
+                {placement === 1 ? '🏆' : placement === 2 ? '🥈' : placement === 3 ? '🥉' : `${placement}th`}
+              </span>
+            )}
+            <p class="text-sm text-base-content/50">{formatDate(t.date)}</p>
+          </div>
+        </div>
+      </a>
+    )
+  })}
+</div>
+
+      <!-- Players -->
+      <div>
+        <h2 class="text-2xl font-bold mb-4">Current Players</h2>
+        {players.length > 0 ? (
+          <div class="flex flex-col gap-3">
+            {players.map(player => (
+              <a href={`/people/${player.id}`} class="card bg-base-200 hover:bg-base-300 transition-colors">
+                <div class="card-body p-4 flex-row items-center gap-3">
+                  {player.photo ? (
+                    <img src={getImageUrl(player.photo)} alt={player.full_name} class="w-10 h-10 rounded-full object-cover" />
+                  ) : (
+                    <div class="w-10 h-10 rounded-full bg-base-300 flex items-center justify-center text-lg">👤</div>
+                  )}
+                  <div>
+                    <p class="font-semibold">{player.full_name}</p>
+                    {player.player_profile?.[0] && (
+                      <p class="text-sm text-base-content/50">
+                        {player.player_profile[0].position} #{player.player_profile[0].shirt_number}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <p class="text-base-content/50">No players recorded yet.</p>
+        )}
+      </div>
+
+    </div>
+
+    <!-- Right: Recent matches -->
+    <div>
+      <h2 class="text-2xl font-bold mb-4">Recent Matches</h2>
+      {recentMatches.length > 0 ? (
+        <div class="flex flex-col gap-3">
+          {recentMatches.map(match => (
+            <a href={`/matches/${match.id}`} class="card bg-base-200 hover:bg-base-300 transition-colors">
+  <div class="card-body p-3 flex-row items-center justify-between">
+    <div>
+      <p class="font-semibold text-sm">
+        {match.home_team.id === teamId ? match.away_team.name : match.home_team.name}
+      </p>
+      {match.title && <p class="text-xs text-base-content/50">{match.title}</p>}
+    </div>
+    <div class="flex items-center gap-2">
+      <p class="font-bold text-primary">{match.home_score} — {match.away_score}</p>
+      <span class={`badge badge-sm ${resultColor(match)}`}>{getResult(match)}</span>
+    </div>
+  </div>
+</a>
+          ))}
+          {allMatches.length > 5 && (
+            <a href="/matches" class="btn btn-ghost btn-sm w-full">All matches →</a>
+          )}
+        </div>
+      ) : (
+        <p class="text-base-content/50">No matches recorded yet.</p>
+      )}
+    </div>
+
+  </div>
+
+</Layout>

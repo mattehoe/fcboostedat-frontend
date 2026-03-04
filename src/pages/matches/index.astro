@@ -1,0 +1,66 @@
+---
+export const prerender = false
+import Layout from '../../layouts/Layout.astro'
+import { fetchCollection } from '../../directus.js'
+
+const matches = await fetchCollection('matches',
+  '?fields=*,home_team.*,away_team.*,tournament.id,tournament.edition,tournament.event.name&sort=-date')
+
+const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-GB', {
+  day: 'numeric', month: 'long', year: 'numeric'
+})
+
+const ourTeamName = 'FC Boosted'
+
+const getResult = (match) => {
+  const weAreHome = match.home_team.name === ourTeamName
+  const ourScore = weAreHome ? match.home_score : match.away_score
+  const theirScore = weAreHome ? match.away_score : match.home_score
+  return ourScore > theirScore ? 'W' : ourScore < theirScore ? 'L' : 'D'
+}
+
+const resultColor = (match) => {
+  const r = getResult(match)
+  return r === 'W' ? 'badge-success' : r === 'L' ? 'badge-error' : 'badge-warning'
+}
+---
+
+<Layout title="Matches — FC Boosted">
+
+  <h1 class="text-4xl font-bold mb-8">Matches</h1>
+
+  <div class="flex flex-col gap-4">
+    {matches.map(match => (
+      <a href={`/matches/${match.id}`} class="card bg-base-200 hover:bg-base-300 transition-colors shadow-md">
+        <div class="card-body py-4">
+          <div class="flex items-center justify-between gap-4">
+
+            <div class="flex-1 text-right">
+              <p class="font-bold text-lg">{match.home_team.name}</p>
+            </div>
+			
+
+            <div class="flex flex-col items-center gap-1">
+  {match.title && <p class="text-xs text-base-content/50">{match.title}</p>}
+  <p class="text-3xl font-bold text-primary">{match.home_score} — {match.away_score}</p>
+  <span class={`badge ${resultColor(match)}`}>{getResult(match)}</span>
+</div>
+
+            <div class="flex-1 text-left">
+              <p class="font-bold text-lg">{match.away_team.name}</p>
+            </div>
+
+          </div>
+
+          <div class="flex justify-between text-sm text-base-content/50 mt-1">
+  <p>{formatDate(match.date)}</p>
+  <div class="flex gap-3">
+    {match.tournament && <p>{match.tournament.event.name} — {match.tournament.edition}</p>}
+  </div>
+</div>
+        </div>
+      </a>
+    ))}
+  </div>
+
+</Layout>

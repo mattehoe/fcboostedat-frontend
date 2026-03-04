@@ -1,0 +1,24 @@
+---
+export const prerender = false
+import Layout from '../../layouts/Layout.astro'
+import { fetchCollection, getImageUrl } from '../../directus.js'
+
+const events = await fetchCollection('tournament_events', '?fields=*&sort=name')
+---
+
+<Layout title="Tournaments — FC Boosted">
+
+  <h1 class="text-4xl font-bold mb-8">Tournaments</h1>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {events.map(event => (
+      <a href={`/tournaments/${event.id}`} class="card bg-base-200 hover:bg-base-300 transition-colors shadow-md">
+        <div class="card-body">
+          <h2 class="card-title">{event.name}</h2>
+          {event.bio && <p class="text-base-content/60">{event.bio}</p>}
+        </div>
+      </a>
+    ))}
+  </div>
+
+</Layout>

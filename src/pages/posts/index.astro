@@ -1,0 +1,36 @@
+---
+export const prerender = false
+import Layout from '../../layouts/Layout.astro'
+import { fetchCollection, getImageUrl } from '../../directus.js'
+
+const posts = await fetchCollection('posts', '?fields=*&sort=-published_date')
+
+const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-GB', {
+  day: 'numeric', month: 'long', year: 'numeric'
+})
+---
+
+<Layout title="Posts — FC Boosted">
+
+  <h1 class="text-4xl font-bold mb-8">Posts</h1>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {posts.map(post => (
+      <a href={`/posts/${post.id}`} class="card bg-base-200 hover:bg-base-300 transition-colors shadow-md">
+        {post.cover_image && (
+          <figure>
+            <img src={getImageUrl(post.cover_image)} alt={post.title} class="w-full h-48 object-cover" />
+          </figure>
+        )}
+        <div class="card-body">
+  {post.cover_image && (
+    <img src={getImageUrl(post.cover_image)} alt={post.title} class="rounded-xl w-full object-cover h-40 mb-2" />
+  )}
+  <h3 class="card-title">{post.title}</h3>
+  <p class="text-sm text-base-content/50">{formatDate(post.published_date)}</p>
+</div>
+      </a>
+    ))}
+  </div>
+
+</Layout>

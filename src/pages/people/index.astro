@@ -1,0 +1,44 @@
+---
+export const prerender = false
+import Layout from '../../layouts/Layout.astro'
+import { fetchCollection, getImageUrl } from '../../directus.js'
+
+const people = await fetchCollection('people',
+  '?fields=*,current_team.*,player_profile.*,manager_profile.*,sponsor_profile.*&sort=full_name')
+---
+
+<Layout title="People — FC Boosted">
+
+  <h1 class="text-4xl font-bold mb-8">People</h1>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    {people.map(person => (
+      <a href={`/people/${person.id}`} class="card bg-base-200 hover:bg-base-300 transition-colors shadow-md">
+        <div class="card-body p-4 flex-row items-center gap-4">
+          {person.photo ? (
+            <img src={getImageUrl(person.photo)} alt={person.full_name} class="w-16 h-16 rounded-full object-cover" />
+          ) : (
+            <div class="w-16 h-16 rounded-full bg-base-300 flex items-center justify-center text-2xl">👤</div>
+          )}
+          <div class="flex-1">
+            <p class="font-bold text-lg">{person.full_name}</p>
+            <div class="flex flex-wrap gap-1 mt-1">
+              {person.player_profile?.length > 0 && <span class="badge badge-outline badge-sm">Player</span>}
+              {person.manager_profile?.length > 0 && <span class="badge badge-outline badge-sm">Manager</span>}
+              {person.sponsor_profile?.length > 0 && <span class="badge badge-outline badge-sm">Sponsor</span>}
+            </div>
+            {person.player_profile?.[0] && (
+              <p class="text-sm text-base-content/50 mt-1">
+                {person.player_profile[0].position} #{person.player_profile[0].shirt_number}
+              </p>
+            )}
+            {person.current_team && (
+              <p class="text-sm text-base-content/50">{person.current_team.name}</p>
+            )}
+          </div>
+        </div>
+      </a>
+    ))}
+  </div>
+
+</Layout>

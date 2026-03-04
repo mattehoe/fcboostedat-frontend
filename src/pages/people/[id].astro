@@ -1,0 +1,195 @@
+---
+export const prerender = false
+import Layout from '../../layouts/Layout.astro'
+import { fetchCollection, getImageUrl } from '../../directus.js'
+
+const { id } = Astro.params
+
+const person = await fetchCollection('people',
+  `/${id}?fields=*,current_team.*,player_profile.*,manager_profile.*,sponsor_profile.*,matches.matches_id.*,matches.matches_id.home_team.*,matches.matches_id.away_team.*,matches.goals,matches.team`)
+
+console.log(JSON.stringify(person.matches, null, 2))
+
+const totalGoals = person?.matches?.reduce((sum, m) => sum + (m.goals || 0), 0) ?? 0
+
+const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-GB', {
+  day: 'numeric', month: 'long', year: 'numeric'
+})
+
+const ourTeamName = 'FC Boosted'
+
+const getResult = (match, playerTeamId) => {
+  const weAreHome = match.home_team.id === playerTeamId
+  const ourScore = weAreHome ? match.home_score : match.away_score
+  const theirScore = weAreHome ? match.away_score : match.home_score
+  return ourScore > theirScore ? 'W' : ourScore < theirScore ? 'L' : 'D'
+}
+
+const resultColor = (match, playerTeamId) => {
+  const r = getResult(match, playerTeamId)
+  return r === 'W' ? 'badge-success' : r === 'L' ? 'badge-error' : 'badge-warning'
+}
+---
+
+<Layout title={`${person.full_name} — FC Boosted`}>
+
+  <a href="/people" class="btn btn-ghost btn-sm mb-6">← Back to people</a>
+
+  <!-- Header -->
+  <div class="flex items-center gap-6 mb-8">
+    {person.photo ? (
+      <img src={getImageUrl(person.photo)} alt={person.full_name} class="w-28 h-28 rounded-full object-cover" />
+    ) : (
+      <div class="w-28 h-28 rounded-full bg-base-200 flex items-center justify-center text-5xl">👤</div>
+    )}
+    <div>
+      <h1 class="text-4xl font-bold">{person.full_name}</h1>
+      <div class="flex flex-wrap gap-2 mt-2">
+        {person.player_profile?.length > 0 && <span class="badge badge-outline">Player</span>}
+        {person.manager_profile?.length > 0 && <span class="badge badge-outline">Manager</span>}
+        {person.sponsor_profile?.length > 0 && <span class="badge badge-outline">Sponsor</span>}
+      </div>
+      {person.current_team && (
+        <a href={`/teams/${person.current_team.id}`} class="text-base-content/50 hover:text-primary transition-colors mt-1 block">
+          {person.current_team.name}
+        </a>
+      )}
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+    <div class="md:col-span-2 flex flex-col gap-8">
+
+      <!-- Player profile -->
+      {person.player_profile?.[0] && (
+        <div class="card bg-base-200 shadow-md">
+          <div class="card-body">
+            <h2 class="card-title mb-2">Player Info</h2>
+            <div class="flex flex-wrap gap-6">
+              <div>
+                <p class="text-sm text-base-content/50">Position</p>
+                <p class="font-semibold">{person.player_profile[0].position}</p>
+              </div>
+              <div>
+                <p class="text-sm text-base-content/50">Shirt Number</p>
+                <p class="font-semibold">#{person.player_profile[0].shirt_number}</p>
+              </div>
+              {person.player_profile[0].joined_date && (
+                <div>
+                  <p class="text-sm text-base-content/50">Joined</p>
+                  <p class="font-semibold">{formatDate(person.player_profile[0].joined_date)}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <!-- Manager profile -->
+      {person.manager_profile?.[0] && (
+        <div class="card bg-base-200 shadow-md">
+          <div class="card-body">
+            <h2 class="card-title mb-2">Manager Info</h2>
+            <div class="flex flex-wrap gap-6">
+              <div>
+                <p class="text-sm text-base-content/50">Role</p>
+                <p class="font-semibold">{person.manager_profile[0].role}</p>
+              </div>
+              {person.manager_profile[0].since_date && (
+                <div>
+                  <p class="text-sm text-base-content/50">Since</p>
+                  <p class="font-semibold">{formatDate(person.manager_profile[0].since_date)}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <!-- Sponsor profile -->
+      {person.sponsor_profile?.[0] && (
+        <div class="card bg-base-200 shadow-md">
+          <div class="card-body">
+            <h2 class="card-title mb-2">Sponsor Info</h2>
+            <div class="flex flex-wrap gap-6">
+              <div>
+                <p class="text-sm text-base-content/50">Company</p>
+                <p class="font-semibold">{person.sponsor_profile[0].company_name}</p>
+              </div>
+              <div>
+                <p class="text-sm text-base-content/50">Tier</p>
+                <p class="font-semibold">{person.sponsor_profile[0].tier}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <!-- Match appearances -->
+      {person.matches?.length > 0 && (
+        <div>
+          <h2 class="text-2xl font-bold mb-4">Match Appearances</h2>
+          <div class="flex flex-col gap-3">
+            {person.matches.map(({ matches_id: match, goals, team: playerTeamId }) => (
+  <a href={`/matches/${match.id}`} class="card bg-base-200 hover:bg-base-300 transition-colors">
+    <div class="card-body py-3 flex-row items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class={`badge ${resultColor(match, playerTeamId)}`}>{getResult(match, playerTeamId)}</span>
+        <div>
+          <p class="font-semibold text-sm">{match.home_team.name} {match.home_score} — {match.away_score} {match.away_team.name}</p>
+          <p class="text-xs text-base-content/50">{formatDate(match.date)}</p>
+        </div>
+      </div>
+      {goals > 0 && (
+        <span class="badge badge-success">⚽ {goals}</span>
+      )}
+    </div>
+  </a>
+))}
+          </div>
+        </div>
+      )}
+
+    </div>
+
+    <!-- Right sidebar -->
+    <div class="flex flex-col gap-6">
+
+      {person.bio && (
+        <div class="card bg-base-200 shadow-md">
+          <div class="card-body">
+            <h2 class="card-title text-lg">Bio</h2>
+            <p class="text-base-content/70">{person.bio}</p>
+          </div>
+        </div>
+      )}
+
+      {person.date_of_birth && (
+        <div class="card bg-base-200 shadow-md">
+          <div class="card-body">
+            <h2 class="card-title text-lg">Details</h2>
+            <p class="text-sm text-base-content/50">Date of Birth</p>
+            <p class="font-semibold">{formatDate(person.date_of_birth)}</p>
+          </div>
+        </div>
+      )}
+
+      {person.player_profile?.[0] && (
+        <div class="stats stats-vertical shadow bg-base-200 w-full">
+          <div class="stat">
+            <div class="stat-title">Appearances</div>
+            <div class="stat-value">{person.matches?.length ?? 0}</div>
+          </div>
+          <div class="stat">
+            <div class="stat-title">Goals</div>
+            <div class="stat-value text-success">{totalGoals}</div>
+          </div>
+        </div>
+      )}
+
+    </div>
+
+  </div>
+
+</Layout>

@@ -1,0 +1,13 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+@plugin "daisyui" {
+  themes: forest --default;
+}
+
+@plugin "daisyui/theme" {
+  name: "forest";
+  default: true;
+
+  --color-primary: oklch(65% 0.25 300);
+  --color-primary-content: oklch(98% 0.01 300);
+}

@@ -1,0 +1,31 @@
+---
+export const prerender = false
+import Layout from '../../layouts/Layout.astro'
+import { fetchCollection, getImageUrl } from '../../directus.js'
+
+const teams = await fetchCollection('teams', '?fields=*&sort=name')
+---
+
+<Layout title="Teams — FC Boosted">
+
+  <h1 class="text-4xl font-bold mb-8">Teams</h1>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {teams.map(team => (
+      <a href={`/teams/${team.id}`} class="card bg-base-200 hover:bg-base-300 transition-colors shadow-md">
+        <div class="card-body flex-row items-center gap-6">
+          {team.logo ? (
+            <img src={getImageUrl(team.logo)} alt={team.name} class="w-16 h-16 object-contain" />
+          ) : (
+            <div class="w-16 h-16 rounded-full bg-base-300 flex items-center justify-center text-2xl">⚽</div>
+          )}
+          <div>
+            <h2 class="card-title">{team.name}</h2>
+            {team.city && <p class="text-base-content/50">{team.city}</p>}
+          </div>
+        </div>
+      </a>
+    ))}
+  </div>
+
+</Layout>

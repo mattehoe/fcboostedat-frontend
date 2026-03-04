@@ -1,0 +1,42 @@
+---
+import '../styles/global.css'
+const { title } = Astro.props
+---
+
+<!DOCTYPE html>
+<html lang="en" data-theme="forest">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{title}</title>
+  </head>
+  <body class="min-h-screen bg-base-100 text-base-content">
+
+    <div class="navbar bg-base-300 px-6 shadow-md">
+      <div class="flex-1">
+        <a href="/" class="flex items-center gap-2">
+  <img src="/logo.png" alt="FC Boosted" class="w-8 h-8 object-contain" />
+  <span class="text-xl font-bold text-purple-800">FC Boosted</span>
+</a>
+      </div>
+      <div class="flex-none">
+        <ul class="menu menu-horizontal px-1 gap-1">
+  <li><a href="/posts" class="rounded-lg">Posts</a></li>
+  <li><a href="/matches" class="rounded-lg">Matches</a></li>
+  <li><a href="/tournaments" class="rounded-lg">Tournaments</a></li>
+  <li><a href="/teams" class="rounded-lg">Teams</a></li>
+  <li><a href="/people" class="rounded-lg">People</a></li>
+</ul>
+      </div>
+    </div>
+
+    <main class="max-w-5xl mx-auto px-6 py-10">
+      <slot />
+    </main>
+
+    <footer class="footer footer-center p-6 bg-base-300 text-base-content mt-10">
+      <p>FC Boosted · Built with Directus & Astro</p>
+    </footer>
+
+  </body>
+</html>
