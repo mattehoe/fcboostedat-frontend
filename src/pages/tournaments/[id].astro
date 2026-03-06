@@ -5,7 +5,9 @@ import { fetchCollection } from '../../directus.js'
 
 const { id } = Astro.params
 
-const event = await fetchCollection('tournament_events', `/${id}?fields=*,editions.*`)
+const event = await fetchCollection('tournament_events', `/${id}?fields=*,editions.*,editions.teams.teams_id,editions.teams.placement`)
+
+const ourTeamId = 1
 
 const sortedEditions = event.editions?.sort((a, b) =>
   new Date(b.date) - new Date(a.date)) ?? []
@@ -26,14 +28,30 @@ const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-GB', {
 
   {sortedEditions.length > 0 ? (
     <div class="flex flex-col gap-4">
-      {sortedEditions.map(edition => (
-        <a href={`/tournaments/${id}/editions/${edition.id}`} class="card bg-base-200 hover:bg-base-300 transition-colors shadow-md">
-          <div class="card-body py-4 flex-row items-center justify-between">
-            <p class="text-xl font-bold">{edition.edition}</p>
-            <p class="text-base-content/50">{formatDate(edition.date)}</p>
-          </div>
-        </a>
-      ))}
+      {sortedEditions.map(edition => {
+  const entry = edition.teams?.find(e => e.teams_id === ourTeamId)
+  const placement = entry?.placement
+  return (
+    <a href={`/tournaments/${id}/editions/${edition.id}`} class="card bg-base-200 hover:bg-base-300 transition-colors shadow-md">
+      <div class="card-body py-4 flex-row items-center justify-between">
+        <div class="flex items-center gap-4">
+          <p class="text-xl font-bold">{edition.edition}</p>
+          {placement && (
+            <span class={`font-bold ${
+              placement === 1 ? 'text-yellow-400' :
+              placement === 2 ? 'text-gray-400' :
+              placement === 3 ? 'text-amber-600' :
+              'text-base-content/50'
+            }`}>
+              {placement === 1 ? '🏆 1st' : placement === 2 ? '🥈 2nd' : placement === 3 ? '🥉 3rd' : `${placement}th`}
+            </span>
+          )}
+        </div>
+        <p class="text-base-content/50">{formatDate(edition.date)}</p>
+      </div>
+    </a>
+  )
+})}
     </div>
   ) : (
     <p class="text-base-content/50">No editions recorded yet.</p>

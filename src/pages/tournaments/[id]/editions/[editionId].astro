@@ -36,7 +36,29 @@ const sortedMatches = edition.matches?.sort((a, b) =>
   <a href={`/tournaments/${id}`} class="btn btn-ghost btn-sm mb-6">← Back to {edition.event.name}</a>
 
   <h1 class="text-4xl font-bold mb-1">{edition.event.name}</h1>
-  <p class="text-2xl text-base-content/50 mb-8">{edition.edition}</p>
+<p class="text-2xl text-base-content/50 mb-4">{edition.edition}</p>
+
+{(() => {
+  const ourTeamId = 1
+  const entry = edition.teams?.find(e => e.teams_id?.id === ourTeamId || e.teams_id === ourTeamId)
+  const placement = entry?.placement
+  if (!placement) return null
+  return (
+    <div class={`alert mb-8 ${
+      placement === 1 ? 'alert-success' :
+      placement === 2 ? 'bg-base-200' :
+      placement === 3 ? 'bg-base-200' :
+      'bg-base-200'
+    }`}>
+      <span class="text-2xl">
+        {placement === 1 ? '🏆' : placement === 2 ? '🥈' : placement === 3 ? '🥉' : '🏅'}
+      </span>
+      <span class="font-bold text-lg">
+        FC Boosted finished {placement === 1 ? '1st' : placement === 2 ? '2nd' : placement === 3 ? '3rd' : `${placement}th`} in this tournament
+      </span>
+    </div>
+  )
+})()}
 
   <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
 
