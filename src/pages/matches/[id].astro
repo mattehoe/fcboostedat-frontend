@@ -6,7 +6,7 @@ import { fetchCollection, getImageUrl } from '../../directus.js'
 const { id } = Astro.params
 
 const match = await fetchCollection('matches',
-  `/${id}?fields=*,home_team.*,away_team.*,tournament.id,tournament.edition,tournament.event.id,tournament.event.name,players.people_id.*,players.goals,players.team`)
+  `/${id}?fields=*,home_team.*,away_team.*,tournament.id,tournament.edition,tournament.event.id,tournament.event.name,tournament.staff.people_id.*,tournament.staff.role,tournament.staff.team.*,players.people_id.*,players.goals,players.team`)
 
 const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-GB', {
   day: 'numeric', month: 'long', year: 'numeric'
@@ -22,6 +22,14 @@ const resultLabel = result === 'W' ? 'Victory' : result === 'L' ? 'Defeat' : 'Dr
 
 const homePlayers = match.players?.filter(p => p.team === match.home_team.id) ?? []
 const awayPlayers = match.players?.filter(p => p.team === match.away_team.id) ?? []
+
+const staffByTeamAndRole = {}
+match.tournament?.staff?.forEach(({ people_id: person, role, team }) => {
+  const teamName = team?.name ?? 'Unknown'
+  if (!staffByTeamAndRole[teamName]) staffByTeamAndRole[teamName] = {}
+  if (!staffByTeamAndRole[teamName][role]) staffByTeamAndRole[teamName][role] = []
+  staffByTeamAndRole[teamName][role].push(person)
+})
 ---
 
 <Layout title={`${match.home_team.name} vs ${match.away_team.name}`}>
@@ -118,5 +126,33 @@ const awayPlayers = match.players?.filter(p => p.team === match.away_team.id) ??
 
     </div>
   )}
+  {Object.keys(staffByTeamAndRole).length > 0 && (
+  <div class="mt-8">
+    <h2 class="text-2xl font-bold mb-4">Staff</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {Object.entries(staffByTeamAndRole).map(([teamName, roles]) => (
+        <div class="card bg-base-200 shadow-md">
+          <div class="card-body">
+            <h3 class="card-title text-lg">{teamName}</h3>
+            <div class="flex flex-col gap-3 mt-2">
+              {Object.entries(roles).map(([role, people]) => (
+                <div class="flex items-start gap-4">
+                  <p class="text-sm text-base-content/50 w-36 shrink-0">{role}</p>
+                  <div class="flex flex-wrap gap-2">
+                    {people.map(person => (
+                      <a href={`/people/${person.id}`} class="badge badge-outline hover:badge-primary transition-colors p-3">
+                        {person.full_name}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+)}
 
 </Layout>

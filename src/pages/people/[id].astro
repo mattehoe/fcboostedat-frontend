@@ -8,6 +8,9 @@ const { id } = Astro.params
 const person = await fetchCollection('people',
   `/${id}?fields=*,current_team.*,player_profile.*,manager_profile.*,sponsor_profile.*,matches.matches_id.*,matches.matches_id.home_team.*,matches.matches_id.away_team.*,matches.goals,matches.team`)
 
+const staffEditions = await fetchCollection('tournaments',
+  `?fields=*,event.*&filter[staff][people_id][_eq]=${id}&sort=-date`)
+
 console.log(JSON.stringify(person.matches, null, 2))
 
 const totalGoals = person?.matches?.reduce((sum, m) => sum + (m.goals || 0), 0) ?? 0
@@ -88,24 +91,43 @@ const resultColor = (match, playerTeamId) => {
 
       <!-- Manager profile -->
       {person.manager_profile?.[0] && (
-        <div class="card bg-base-200 shadow-md">
-          <div class="card-body">
-            <h2 class="card-title mb-2">Manager Info</h2>
-            <div class="flex flex-wrap gap-6">
-              <div>
-                <p class="text-sm text-base-content/50">Role</p>
-                <p class="font-semibold">{person.manager_profile[0].role}</p>
-              </div>
-              {person.manager_profile[0].since_date && (
-                <div>
-                  <p class="text-sm text-base-content/50">Since</p>
-                  <p class="font-semibold">{formatDate(person.manager_profile[0].since_date)}</p>
-                </div>
-              )}
-            </div>
-          </div>
+  <div class="card bg-base-200 shadow-md">
+    <div class="card-body">
+      <h2 class="card-title mb-2">Manager Info</h2>
+      <div class="flex flex-wrap gap-6 mb-4">
+        <div>
+          <p class="text-sm text-base-content/50">Role</p>
+          <p class="font-semibold">{person.manager_profile[0].role}</p>
         </div>
-      )}
+        {person.manager_profile[0].since_date && (
+          <div>
+            <p class="text-sm text-base-content/50">Since</p>
+            <p class="font-semibold">{formatDate(person.manager_profile[0].since_date)}</p>
+          </div>
+        )}
+        {person.manager_profile[0].fm_hours > 0 && (
+          <div>
+            <p class="text-sm text-base-content/50">FM Playtime</p>
+            <p class="font-semibold">⚽ {person.manager_profile[0].fm_hours}h</p>
+          </div>
+        )}
+      </div>
+
+      {staffEditions?.length > 0 && (
+  <div>
+    <p class="text-sm text-base-content/50 mb-2">Tournaments Managed</p>
+    <div class="flex flex-col gap-2">
+      {staffEditions.map(t => (
+        <a href={`/tournaments/${t.event.id}/editions/${t.id}`} class="badge badge-outline hover:badge-primary transition-colors p-3">
+          {t.event.name} — {t.edition}
+        </a>
+      ))}
+    </div>
+  </div>
+)}
+    </div>
+  </div>
+)}
 
       <!-- Sponsor profile -->
       {person.sponsor_profile?.[0] && (

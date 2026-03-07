@@ -6,7 +6,7 @@ import { fetchCollection, getImageUrl } from '../directus.js'
 const posts = await fetchCollection('posts', '?sort=-published_date&limit=10')
 const ourTeamId = 1
 const recentMatches = await fetchCollection('matches',
-  `?fields=*,home_team.*,away_team.*,title&filter[_or][0][home_team][_eq]=${ourTeamId}&filter[_or][1][away_team][_eq]=${ourTeamId}&sort=-date&limit=5`)
+  `?fields=*,home_team.*,away_team.*,title&filter[_or][0][home_team][_eq]=${ourTeamId}&filter[_or][1][away_team][_eq]=${ourTeamId}&sort=-date,-id&limit=5`)
 ---
 
 <Layout title="FC Boosted">

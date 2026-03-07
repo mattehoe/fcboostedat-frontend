@@ -7,7 +7,7 @@ const { id, editionId } = Astro.params
 
 
 const edition = await fetchCollection('tournaments',
-  `/${editionId}?fields=*,event.*,teams.teams_id.*,teams.placement,matches.*,matches.home_team.*,matches.away_team.*`)
+  `/${editionId}?fields=*,event.*,teams.teams_id.*,teams.placement,matches.*,matches.home_team.*,matches.away_team.*,matches.title`)
 
 const formatDate = (dateStr) => new Date(dateStr).toLocaleDateString('en-GB', {
   day: 'numeric', month: 'long', year: 'numeric'
@@ -92,29 +92,29 @@ const sortedMatches = edition.matches?.sort((a, b) =>
 <div>
   <h2 class="text-2xl font-bold mb-4">Participating Teams</h2>
   {edition.teams?.length > 0 ? (
-    <div class="flex flex-col gap-3">
-      {edition.teams
-        .sort((a, b) => (a.placement ?? 99) - (b.placement ?? 99))
-        .map(({ teams_id: team, placement }) => (
-          <a href={`/teams/${team.id}`} class="card bg-base-200 hover:bg-base-300 transition-colors">
-            <div class="card-body p-4 flex-row items-center gap-4">
-              {placement && (
-                <span class={`text-2xl font-bold w-8 text-center ${
-                  placement === 1 ? 'text-yellow-400' :
-                  placement === 2 ? 'text-gray-400' :
-                  placement === 3 ? 'text-amber-600' :
-                  'text-base-content/30'
-                }`}>{placement}</span>
-              )}
-              {team.logo && (
-                <img src={getImageUrl(team.logo)} alt={team.name} class="w-10 h-10 object-contain" />
-              )}
-              <p class="font-semibold">{team.name}</p>
-              {placement === 1 && <span class="badge badge-warning ml-auto">🏆 Winner</span>}
-            </div>
-          </a>
-        ))}
-    </div>
+  <div class="flex flex-col gap-3">
+    {edition.teams
+      .sort((a, b) => (a.placement ?? 99) - (b.placement ?? 99))
+      .map(({ teams_id: team, placement }) => (
+        <a href={`/teams/${team.id}`} class="card bg-base-200 hover:bg-base-300 transition-colors">
+          <div class="card-body p-4 flex-row items-center gap-4">
+            {placement && (
+              <span class={`text-2xl font-bold w-8 shrink-0 text-center ${
+                placement === 1 ? 'text-yellow-400' :
+                placement === 2 ? 'text-gray-400' :
+                placement === 3 ? 'text-amber-600' :
+                'text-base-content/30'
+              }`}>{placement}</span>
+            )}
+            {team.logo && (
+              <img src={getImageUrl(team.logo)} alt={team.name} class="w-10 h-10 shrink-0 object-contain" />
+            )}
+            <p class="font-semibold flex-1 min-w-0 truncate">{team.name}</p>
+            {placement === 1 && <span class="badge badge-warning shrink-0">🏆</span>}
+          </div>
+        </a>
+      ))}
+  </div>
   ) : (
     <p class="text-base-content/50">No teams recorded yet.</p>
   )}
